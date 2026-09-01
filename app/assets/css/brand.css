@@ -1,0 +1,238 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------
+   Brand tokens
+   --------------------------------------------------------------- */
+
+@theme {
+    --font-display: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
+    --font-serif: "Instrument Serif", Georgia, serif;
+    --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+    /* display scale - marketing headlines */
+    --text-hero: 4.75rem;
+    --text-hero--line-height: 1;
+    --text-hero--letter-spacing: -0.035em;
+    --text-display: 2.875rem;
+    --text-display--line-height: 1.06;
+    --text-display--letter-spacing: -0.035em;
+    --text-section: 2.5rem;
+    --text-section--line-height: 1.08;
+    --text-section--letter-spacing: -0.03em;
+    --text-card: 1.5625rem;
+    --text-card--line-height: 1.2;
+    --text-card--letter-spacing: -0.02em;
+}
+
+/* ---------------------------------------------------------------
+   Semantic surfaces - flip on .dark
+   --------------------------------------------------------------- */
+
+@layer base {
+    :root {
+        --surface-bg: #eeedea;
+        --surface-panel: #ffffff;
+        --surface-fg: #17150f;
+        --surface-muted: #6d685f;
+        --surface-line: #e5dfd5;
+        --surface-code: #16150f;
+        /* Pop PDF blue, from poppdf.org. Unlike the orange it replaces it cannot serve both
+           grounds at one value — #2f6f8f on the dark ground falls to about 3.3:1 — so it flips
+           with the surfaces rather than sitting in @theme as a constant. */
+        --surface-accent: #2f6f8f;
+        --surface-accent-hover: #1e4f68;
+        --surface-on-accent: #ffffff;
+        --syntax-base: #e8e3d9;
+        --syntax-keyword: #ff8f43;
+        --syntax-type: #3fe0c0;
+        --syntax-fn: #ffd44e;
+        --syntax-var: #5cc2ff;
+        --syntax-string: #a2cd7e;
+        --syntax-number: #d98bff;
+        --syntax-comment: #8f887a;
+    }
+
+    .dark {
+        --surface-bg: #131211;
+        --surface-panel: #1b1a18;
+        --surface-fg: #f3efe8;
+        --surface-muted: #a09a90;
+        --surface-line: #2b2825;
+        --surface-code: #0d0c0b;
+        --surface-accent: #7fb6ce;
+        --surface-accent-hover: #a5cede;
+        --surface-on-accent: #12222a;
+        /* The code surface is dark in both themes, so the syntax palette does not flip with
+           them — shifting it cost contrast in dark mode for no gain. */
+        --syntax-base: #e8e3d9;
+        --syntax-keyword: #ff8f43;
+        --syntax-type: #3fe0c0;
+        --syntax-fn: #ffd44e;
+        --syntax-var: #5cc2ff;
+        --syntax-string: #a2cd7e;
+        --syntax-number: #d98bff;
+        --syntax-comment: #8f887a;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        background-color: var(--surface-bg);
+        color: var(--surface-fg);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        text-wrap: pretty;
+    }
+
+    a {
+        color: var(--color-pop-blue);
+        text-decoration: none;
+    }
+
+    /* Only unstyled links (content links added later) get the generic fade.
+       Anything carrying utility classes defines its own hover, so the fade
+       does not sit on top of it and flatten the effect. */
+    a:not([class]):hover {
+        opacity: 0.72;
+    }
+
+    /* Visible keyboard focus on everything interactive */
+    :focus-visible {
+        outline: 2px solid var(--color-pop-blue);
+        outline-offset: 3px;
+        border-radius: 4px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        html {
+            scroll-behavior: auto;
+        }
+
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+
+    /* No-JS: reveal the mobile menu rather than trapping it closed */
+    .no-js [x-cloak] {
+        display: none !important;
+    }
+}
+
+@theme inline {
+    --color-bg: var(--surface-bg);
+    --color-panel: var(--surface-panel);
+    --color-fg: var(--surface-fg);
+    --color-muted: var(--surface-muted);
+    --color-line: var(--surface-line);
+    --color-code: var(--surface-code);
+    --color-pop-blue: var(--surface-accent);
+    --color-pop-blue-hover: var(--surface-accent-hover);
+    --color-on-accent: var(--surface-on-accent);
+    --color-kw: var(--syntax-keyword);
+    --color-str: var(--syntax-string);
+    --color-var: var(--syntax-var);
+    --color-comment: var(--syntax-comment);
+    --color-type: var(--syntax-type);
+    --color-fn: var(--syntax-fn);
+    --color-num: var(--syntax-number);
+}
+
+/* ---------------------------------------------------------------
+   Component classes - only for patterns repeated across pages
+   --------------------------------------------------------------- */
+
+@layer components {
+    /* Nav item: hairline slides in on hover, locks the accent when active */
+    .nav-link {
+        @apply relative inline-flex items-center text-[15px] text-muted transition-colors duration-150;
+    }
+
+    .nav-link::after {
+        content: "";
+        @apply absolute -bottom-1.5 left-0 h-0.5 w-full origin-left scale-x-0 rounded-sm bg-current transition-transform duration-150;
+    }
+
+    .nav-link:hover {
+        @apply text-fg;
+    }
+
+    .nav-link:hover::after {
+        @apply scale-x-100;
+    }
+
+    .nav-link-active {
+        @apply font-semibold text-fg;
+    }
+
+    .nav-link-active::after {
+        @apply scale-x-100 bg-pop-blue;
+    }
+
+    /* The logo: the Spread mark and the wordmark together, the lockup poppdf.org uses,
+       standing in for the Pop PHP logo image the framework docs carry. 11px gap is its
+       spacing, not a round number picked here. */
+    .brand {
+        @apply inline-flex items-center gap-[11px] text-fg;
+    }
+
+    .wordmark {
+        @apply font-serif text-[23px] leading-none tracking-[0.005em] text-fg lg:text-[26px];
+    }
+
+    .eyebrow {
+        @apply font-mono text-[17px] font-medium uppercase tracking-[0.14em] text-pop-blue;
+    }
+
+    .card {
+        @apply flex flex-col gap-3.5 rounded-2xl border border-line bg-panel p-8;
+    }
+
+    .icon-badge {
+        @apply flex h-12 w-12 items-center justify-center rounded-xl border border-line bg-bg text-pop-blue;
+    }
+
+    .tag {
+        @apply rounded-full border border-line px-2.5 py-1 font-mono text-xs text-pop-blue;
+    }
+
+    .btn-primary {
+        @apply rounded-full bg-pop-blue px-7 py-3.5 text-[15.5px] font-medium text-on-accent;
+    }
+
+    .btn-secondary {
+        @apply rounded-full border border-line bg-panel px-7 py-3.5 text-[15.5px] font-medium text-fg;
+    }
+
+    .code-window {
+        @apply overflow-hidden rounded-2xl bg-code shadow-[0_18px_40px_rgba(23,21,15,0.16)];
+    }
+
+    .code-window-bar {
+        @apply border-b border-white/10 px-5 py-3.5 font-mono text-xs text-comment;
+    }
+
+    .code-window pre {
+        @apply overflow-x-auto p-6 font-mono text-[13.5px]/[1.8];
+        /* Set directly rather than through a utility: `text-base` is Tailwind's font-size
+           utility, so a colour mapped to that name would fight the size above. */
+        color: var(--syntax-base);
+    }
+
+    /* Comments set in italic, the way an editor does — it separates prose from code without
+       spending another colour on it. */
+    .code-window pre .text-comment {
+        @apply italic;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}

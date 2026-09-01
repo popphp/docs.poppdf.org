@@ -1,7 +1,259 @@
-@import "tailwindcss";
+/* ---------------------------------------------------------------
+   Pop documentation site
 
-@custom-variant dark (&:where(.dark, .dark *));
+   The brand comes from the v7 marketing site and is not redefined here.
+   brand.css is a verbatim copy of popphp.org app/assets/css/app.css on the
+   dev-v7 branch — edit it there and re-copy, never here.
+   `php ../new-docs/tools/theme-check.php` reports drift.
 
-.bg-pop-orange-light {
-    background-color: #e06726
+   brand.css already exposes the four code-token classes as utilities through
+   its `@theme inline` block (text-kw, text-str, text-var, text-comment), so
+   they are not redefined here either. What they need is for Tailwind to see
+   them: they appear only inside generated page views, emitted by
+   Pop\Docs\Tools\Highlighter, so those views have to be in the scan path.
+   --------------------------------------------------------------- */
+
+@import "./brand.css";
+
+@source "../../view";
+@source "../../src";
+
+/* ---------------------------------------------------------------
+   Documentation components
+
+   Values match the approved design canvas, which took them from the
+   marketing site: same radii, shadow, type sizes and hairlines.
+   --------------------------------------------------------------- */
+
+@layer components {
+    /* Code window — the marketing site's anatomy, generated per sample by
+       Pop\Docs\Tools\CodeBlockRenderer and driven by the same copyCode Alpine component. */
+    .code-window {
+        @apply overflow-hidden rounded-2xl bg-code shadow-[0_18px_40px_rgba(23,21,15,0.16)];
+    }
+
+    .code-window-bar {
+        @apply flex items-center gap-2.5 border-b border-white/10 px-5 py-3.5 font-mono text-xs text-comment;
+    }
+
+    .code-lang {
+        @apply text-kw;
+    }
+
+    .code-file {
+        @apply ml-auto opacity-75;
+    }
+
+    .code-copy {
+        @apply -mr-1 flex items-center rounded-md p-1.5 text-comment transition-colors duration-150
+               hover:bg-white/10 hover:text-str;
+    }
+
+    /* The bar has a file label only sometimes; without one the button takes the slack. */
+    .code-window-bar > .code-copy:nth-child(2) {
+        @apply ml-auto;
+    }
+
+    .code-copied {
+        @apply text-pop-blue;
+    }
+
+    .code-window pre {
+        @apply overflow-x-auto p-6 font-mono text-[13.5px]/[1.8] text-str;
+    }
+
+    /* Section nav */
+    .side-link {
+        @apply block rounded-md px-2.5 py-1.5 text-sm text-muted transition-colors duration-150
+               hover:bg-panel hover:text-fg;
+    }
+
+    .side-link-active {
+        @apply bg-panel font-semibold text-pop-blue shadow-[inset_2px_0_0_var(--color-pop-blue)];
+    }
+
+    /* On-this-page rail */
+    .rail-link {
+        @apply border-l-2 border-line py-1 pl-3 text-[13px] text-muted transition-colors duration-150
+               hover:text-fg;
+    }
+
+    .rail-link-sub {
+        @apply pl-6;
+    }
+
+    .rail-link-active {
+        @apply border-pop-blue text-pop-blue;
+    }
+
+    /* Page body. The markdown renderer emits plain tags, so the styling lives here rather than
+       in classes the generator would have to know about. */
+    .prose > p {
+        @apply my-5 text-[16.5px]/[1.75];
+    }
+
+    .prose h2 {
+        @apply mt-11 mb-4 scroll-mt-24 font-display text-[27px] tracking-[-0.02em];
+    }
+
+    .prose h3 {
+        @apply mt-8 mb-3 scroll-mt-24 font-display text-[21px] tracking-[-0.02em];
+    }
+
+    .prose h2 .anchor,
+    .prose h3 .anchor {
+        @apply ml-2 text-pop-blue opacity-0 transition-opacity duration-150;
+    }
+
+    .prose h2:hover .anchor,
+    .prose h3:hover .anchor {
+        @apply opacity-60;
+    }
+
+    .prose :not(pre) > code {
+        @apply font-mono text-[0.9em] text-pop-blue;
+    }
+
+    .prose ul,
+    .prose ol {
+        @apply my-5 flex flex-col gap-2 pl-6 text-[16.5px]/[1.75];
+    }
+
+    .prose ul {
+        @apply list-disc;
+    }
+
+    .prose ol {
+        @apply list-decimal;
+    }
+
+    .prose .code-window {
+        @apply my-7;
+    }
+
+    .prose table {
+        @apply my-7 block w-full overflow-x-auto border-collapse text-[15px];
+    }
+
+    .prose th {
+        @apply border-b border-line px-3 py-2.5 text-left font-semibold;
+    }
+
+    .prose td {
+        @apply border-b border-line px-3 py-2.5 align-top;
+    }
+
+    .prose th:first-child,
+    .prose td:first-child {
+        @apply pl-0;
+    }
+
+    .prose blockquote {
+        @apply my-6 rounded-xl border border-line bg-panel px-5 py-4 text-[15.5px]/[1.7];
+    }
+
+    .prose blockquote > p {
+        @apply my-0;
+    }
+
+    .prose a {
+        @apply underline decoration-pop-blue/30 underline-offset-2 hover:decoration-pop-blue;
+    }
+
+    .prose img {
+        @apply max-w-full;
+    }
+}
+
+@layer components {
+    /* Shell controls */
+    .tap-target {
+        @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line
+               bg-panel text-fg transition-colors duration-150 hover:border-pop-blue/40;
+    }
+
+    .key {
+        @apply rounded-[5px] border border-line px-1.5 py-px font-mono text-[10.5px] text-muted;
+    }
+
+    /* Search results */
+    .hit {
+        @apply flex flex-col gap-0.5 rounded-lg px-3.5 py-2.5 sm:flex-row sm:items-baseline sm:gap-3;
+    }
+
+    .hit-active {
+        @apply bg-bg shadow-[inset_2px_0_0_var(--color-pop-blue)];
+    }
+
+    .hit-title {
+        @apply text-[15px] font-semibold text-fg;
+    }
+
+    .hit-summary {
+        @apply truncate text-[12.5px] text-muted;
+    }
+
+    /* Prev / next */
+    .page-turn {
+        @apply flex-1 rounded-xl border border-line bg-panel px-4 py-3.5 transition-colors duration-150
+               hover:border-pop-blue/50;
+    }
+
+    .page-turn-label {
+        @apply mb-1 block text-xs text-muted;
+    }
+}
+
+@layer components {
+    /* Third-level nav: pages that extend the one above them. The rule ties the children to
+       their parent visually so the indent reads as a hierarchy rather than a stray margin. */
+    .side-children {
+        @apply ml-3 flex flex-col gap-px border-l border-line pl-1.5;
+    }
+
+    .side-link-child {
+        @apply text-[13px];
+    }
+}
+
+@layer components {
+    /* A link that leaves the docs carries a mark, so a reader knows before clicking that the
+       tab is about to change. The renderer adds .external; the glyph is a mask so it inherits
+       the link's color in both themes. */
+    .prose a.external::after {
+        content: "";
+        @apply ml-1 inline-block h-[0.72em] w-[0.72em] shrink-0 bg-current align-[-0.02em] opacity-70;
+        mask: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 4h6v6'/%3E%3Cpath d='M20 4 11 13'/%3E%3Cpath d='M18 14v5a1.6 1.6 0 0 1-1.6 1.6H5.6A1.6 1.6 0 0 1 4 19V8.6A1.6 1.6 0 0 1 5.6 7h5'/%3E%3C/svg%3E") center / contain no-repeat;
+    }
+}
+
+@layer components {
+    /* Section headings in the sidebar.
+       They were the brand's .eyebrow — mono, uppercase, tracked, accent-coloured — which is a label
+       treatment for a marketing page rather than a heading in a list of 61 links. Set in the
+       display face at reading case, they read as headings, and the accent goes back to meaning
+       "the page you are on". */
+    .nav-section {
+        @apply font-display text-[13.5px] font-semibold tracking-[-0.01em] text-fg;
+    }
+}
+
+/* ---------------------------------------------------------------
+   Syntax palette
+
+   The palette itself lives in brand.css now — it was ported back to popphp.org so both sites
+   colour code identically, and `php ../new-docs/tools/theme-check.php` keeps them in step.
+
+   What stays here is the part the marketing site has no use for: the three extra token classes
+   Pop\Docs\Tools\Highlighter emits, which Tailwind only generates when it sees them, and the
+   italic comment rule scoped to generated blocks.
+   --------------------------------------------------------------- */
+
+@layer components {
+    /* Italic comments, the way an editor sets them — it separates prose from code at a glance
+       without spending another color on it. */
+    .code-window pre .text-comment {
+        @apply italic;
+    }
+
 }

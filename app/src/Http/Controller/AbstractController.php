@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controller;
+namespace Pop\Docs\Http\Controller;
 
 use Pop\Dispatch\HttpTrait;
 use Pop\Http\Server\Response;

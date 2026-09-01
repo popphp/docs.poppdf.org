@@ -1,0 +1,44 @@
+<?php
+/**
+ * Section navigation. Expects $nav and $attr.
+ *
+ * The same markup serves the desktop column and the mobile drawer; only the wrapper differs, so
+ * there is one nav to keep correct rather than two.
+ *
+ * The section holding the current page opens; the rest start collapsed. The design artboard showed
+ * every section expanded, but it listed a handful of pages per section — all 61 at once is a
+ * 1,200px column the reader has to scroll past to reach anything.
+ *
+ * Loop variables are prefixed: an include shares the caller's scope, and a bare $section here
+ * would overwrite the page's own $section for everything rendered after this partial.
+ */
+?>
+<?php foreach ($nav as $navSection => $navPages): ?>
+<?php
+    $navHere = false;
+    array_walk_recursive($navPages, function ($value, $key) use (&$navHere): void {
+        if ($key === 'current' && $value === true) {
+            $navHere = true;
+        }
+    });
+?>
+<div class="mb-5" x-data="{ open: <?=$navHere ? 'true' : 'false' ?> }">
+    <button type="button" @click="open = !open" :aria-expanded="open.toString()"
+            class="flex w-full items-center gap-1.5 py-1 text-left">
+        <svg class="transition-transform duration-150" :class="open ? 'rotate-90' : ''" viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+        <span class="nav-section"><?=$attr($navSection) ?></span>
+    </button>
+    <div x-show="open" x-cloak class="mt-1.5 flex flex-col gap-px">
+<?php foreach ($navPages as $navPage): ?>
+        <a href="<?=$attr($navPage['slug']) ?>" class="side-link<?=$navPage['current'] ? ' side-link-active' : '' ?>"<?=$navPage['current'] ? ' aria-current="page"' : '' ?>><?=$attr($navPage['title']) ?></a>
+<?php if (!empty($navPage['children'])): ?>
+        <div class="side-children">
+<?php foreach ($navPage['children'] as $navChild): ?>
+            <a href="<?=$attr($navChild['slug']) ?>" class="side-link side-link-child<?=$navChild['current'] ? ' side-link-active' : '' ?>"<?=$navChild['current'] ? ' aria-current="page"' : '' ?>><?=$attr($navChild['title']) ?></a>
+<?php endforeach; ?>
+        </div>
+<?php endif; ?>
+<?php endforeach; ?>
+    </div>
+</div>
+<?php endforeach; ?>

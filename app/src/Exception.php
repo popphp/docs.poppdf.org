@@ -1,6 +1,6 @@
 <?php
 
-namespace App;
+namespace Pop\Docs;
 
 class Exception extends \Exception
 {

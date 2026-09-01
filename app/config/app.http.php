@@ -1,24 +1,41 @@
 <?php
 
+/**
+ * The documentation routes are generated from new-docs/sitemap.php — one static GET route per
+ * page — by new-docs/tools/generate-routes.php. Regenerate after changing the sitemap; do not
+ * hand-edit app.docs.php.
+ */
+$docs = include __DIR__ . '/app.docs.php';
+$toc  = include __DIR__ . '/app.docs-toc.php';
+
 return [
     'routes' => [
-        'get' => [
+        'get' => $docs['routes'] + [
             '/api[/]' => [
-                'controller' => 'App\Http\Controller\IndexController',
-                'action'     => 'index'
-            ],
-            '[/]' => [
-                'controller' => 'App\Http\Controller\IndexController',
+                'controller' => 'Pop\Docs\Http\Controller\IndexController',
                 'action'     => 'index'
             ],
         ],
+        // The catch-all sits at the top level, not inside a method group: the router treats a
+        // bare method name as a group key but never '*', so nesting it registered a wildcard
+        // route whose controller spec was another route array — malformed, and every unmatched
+        // path fell through to the router's own bare 404 instead of reaching the controller.
         '*' => [
-            '*'    => [
-                'controller' => 'App\Http\Controller\IndexController',
-                'action'     => 'error'
-            ]
+            'controller' => 'Pop\Docs\Http\Controller\IndexController',
+            'action'     => 'error'
         ]
     ],
+
+    // Page index behind the generated routes: title, section, components and prev/next, plus
+    // the on-this-page headings the view builder recorded while rendering each page.
+    'docs' => array_combine(
+        array_keys($docs['pages']),
+        array_map(
+            static fn(array $page, string $slug): array => $page + ['headings' => $toc[$slug] ?? []],
+            $docs['pages'],
+            array_keys($docs['pages'])
+        )
+    ),
 
     'http_options_headers' => [
         'Access-Control-Allow-Origin'  => '*',

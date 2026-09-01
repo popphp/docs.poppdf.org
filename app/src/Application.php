@@ -1,6 +1,6 @@
 <?php
 
-namespace App;
+namespace Pop\Docs;
 
 use Pop\Db;
 use Pop\Console\Console;
@@ -15,13 +15,13 @@ class Application extends \Pop\Application
      * Application name
      * @var ?string
      */
-    const string NAME = 'app';
+    const string NAME = 'pop-docs';
 
     /**
      * Application full name
      * @var ?string
      */
-    const string FULL_NAME = 'App';
+    const string FULL_NAME = 'Pop Docs';
 
     /**
      * Application version
@@ -60,7 +60,7 @@ class Application extends \Pop\Application
 
         if ($this->router() !== null) {
             if ($this->router()->isHttp()) {
-                $this->on('app.dispatch.pre', 'App\Http\Event\Options::send', 1);
+                $this->on('app.dispatch.pre', 'Pop\Docs\Http\Event\Options::send', 1);
             } else if ($this->router()->isCli()) {
                 $console = new Console(120);
                 $console->write(PHP_EOL . $console->header(self::FULL_NAME, '=', null, 'left', false, true));
