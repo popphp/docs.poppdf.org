@@ -90,8 +90,7 @@ instead, so a caller can tell &quot;this file needs a password&quot; from &quot;
 <p>AES-128 and AES-256 are the supported algorithms. A document encrypted any other way raises an
 exception naming the problem rather than failing obscurely:</p>
 <ul>
-<li><strong>RC4</strong> is refused rather than unimplemented — it is broken, and modern tools will not write it
-without being forced to</li>
+<li><strong>RC4</strong>, the older algorithm, is not supported</li>
 <li><strong>Revision 5</strong>, a deprecated Adobe extension, is refused the same way</li>
 <li>a document whose cross-reference data is too damaged to locate its encryption dictionary is refused
 rather than reported as an empty unencrypted document</li>
