@@ -6,7 +6,9 @@
 ?>
 <p>A form is a named container that lives on the <code>Document</code>, and fields are added to a <code>Page</code>. Each
 field names the form it belongs to, and when the document compiles, every field that names a
-registered form is written as a widget annotation and its object number is indexed into that form.</p>
+registered form is written as a widget annotation and its object number is indexed into that form.
+<a href="/build/html">HTML to PDF</a> builds these same objects from <code>&lt;form&gt;</code> markup, so everything on this page
+describes what that conversion produces as well.</p>
 <p><strong>Disclaimer</strong></p>
 <p>Form support varies widely by reader — Acrobat implements the full field and flag set, while browser
 viewers, OS previewers and mobile apps each implement a subset. Pop PDF writes a field's structure and
@@ -174,9 +176,9 @@ method returns the page, so fields chain:</p>
 </code></pre>
 </div>
 
-<p>That writes a 1,777-byte single-page letter document at PDF version 1.7, whose catalog carries
-<code>&lt;&lt;/Fields[6 0 R 7 0 R 8 0 R 9 0 R]&gt;&gt;</code> and whose page carries the matching
-<code>/Annots[6 0 R 7 0 R 8 0 R 9 0 R]</code>. The four widgets compile to:</p>
+<p>That writes a 2,222-byte single-page letter document at PDF version 1.7, whose catalog carries
+<code>&lt;&lt;/Fields[6 0 R 7 0 R 8 0 R 11 0 R]&gt;&gt;</code> and whose page carries the matching
+<code>/Annots[6 0 R 7 0 R 8 0 R 11 0 R]</code>. The four widgets compile to:</p>
 <table>
 <thead>
 <tr>
@@ -214,7 +216,7 @@ method returns the page, so fields chain:</p>
 <td><code>[ (Canada) (Mexico) (United States) ]</code></td>
 </tr>
 <tr>
-<td><code>9</code></td>
+<td><code>11</code></td>
 <td><code>/Btn</code></td>
 <td><code>agree</code></td>
 <td><code>[72 460 88 476]</code></td>
@@ -223,6 +225,8 @@ method returns the page, so fields chain:</p>
 </tr>
 </tbody>
 </table>
+<p>Objects <code>9</code> and <code>10</code> are the checkbox's own on and off appearance streams, written just before the
+widget that references them — which is why the checkbox lands on <code>11</code> rather than following <code>8</code>.</p>
 <p>The second argument must match a registered form name exactly. A field naming a form that was never
 registered is dropped silently at compile time — no widget object, no <code>/Annots</code> entry — and a form
 that is registered but never named by a field compiles with an empty <code>&lt;&lt;/Fields[]&gt;&gt;</code>.</p>
@@ -275,8 +279,10 @@ so a whole configuration is one chain:</p>
 <ul>
 <li>on a text field, hand each one the plain string — <code>Field\Text</code> quotes and escapes it for you, so
 the chain above emits <code>/V (Alex Doe)</code> and <code>/DV (Alex Doe)</code></li>
-<li>a leading <code>/</code> still marks a name value rather than a string, the form a checkbox, radio button or
-push button field's on and off states take; see Buttons below</li>
+<li>on a choice field, hand it the option's export value the same way — <code>setValue('Canada')</code> emits
+<code>/V (Canada)</code></li>
+<li>on a checkbox or radio, <code>setValue()</code> carries the export name for the box's checked state rather than
+the state itself; see <a href="#checked-state">Checked State</a> below</li>
 <li><code>getValue()</code> and <code>getDefaultValue()</code> read them back, and both start out <code>null</code></li>
 </ul>
 <p><code>setFont()</code> names a font, <code>setSize()</code> sets the point size and <code>setFontColor()</code> takes any <code>Pop\Color</code>
@@ -354,6 +360,34 @@ Size starts at <code>12</code>; font, color, width and height start at <code>nul
 <p>Flags accumulate into a single integer, so <code>setReadOnly()-&gt;setRequired()-&gt;setNoExport()</code> emits
 <code>/Ff 7</code>. Calling one of them more than once sets the bit once — three <code>setMultiline()</code> calls emit
 <code>/Ff 4096</code>, the same as one. A field with no flag setter called on it emits no <code>/Ff</code> entry at all.</p>
+<h3 id="borders-and-backgrounds">Borders and Backgrounds<a class="anchor" href="#borders-and-backgrounds" aria-label="Link to this section">#</a></h3>
+
+<p>Every field type takes a border and a background of its own, so the box a reader sees comes from the
+field rather than from shapes drawn beside it:</p>
+<div class="code-window" x-data="copyCode">
+<div class="code-window-bar"><span class="code-lang">PHP</span><button type="button" class="code-copy" @click="copy()" :aria-label="copied ? 'Copied' : 'Copy code'" aria-label="Copy code"><svg x-show="!copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11.5" height="11.5" rx="2.4"></rect><path d="M15 5.6A2.6 2.6 0 0 0 12.4 3H5.6A2.6 2.6 0 0 0 3 5.6v6.8A2.6 2.6 0 0 0 5.6 15"></path></svg><svg x-show="copied" x-cloak class="code-copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9 17l10.5-10.5"></path></svg></button></div>
+<pre><code><span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Document\Font</span>;
+<span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Document\Page\Field\Text</span>;
+
+<span class="text-var">$field</span> = <span class="text-kw">new</span> <span class="text-type">Text</span>(<span class="text-str">&#039;full_name&#039;</span>, <span class="text-type">font</span>: <span class="text-type">Font</span>::<span class="text-num">HELVETICA</span>, <span class="text-type">size</span>: <span class="text-num">12</span>);
+<span class="text-var">$field</span>-&gt;<span class="text-fn">setWidth</span>(<span class="text-num">240</span>)
+      -&gt;<span class="text-fn">setHeight</span>(<span class="text-num">24</span>)
+      -&gt;<span class="text-fn">setBorderWidth</span>(<span class="text-num">1</span>)
+      -&gt;<span class="text-fn">setBorderColor</span>([<span class="text-num">153</span>, <span class="text-num">153</span>, <span class="text-num">153</span>])
+      -&gt;<span class="text-fn">setBackgroundColor</span>([<span class="text-num">255</span>, <span class="text-num">255</span>, <span class="text-num">255</span>]);
+</code></pre>
+</div>
+
+<p>That compiles to <code>/MK &lt;&lt; /BC [0.6 0.6 0.6] /BG [1 1 1] &gt;&gt;</code> and <code>/BS &lt;&lt; /W 1 &gt;&gt;</code> — the appearance
+characteristics a reader draws the box from, and the border style that gives it a width:</p>
+<ul>
+<li>both color setters take an <code>[r, g, b]</code> array, 0–255 per channel, and render as PDF's 0–1 range</li>
+<li>border width is the gate: <code>0</code>, the default, writes neither <code>/BC</code> nor <code>/BS</code>, so a field given only
+<code>setBackgroundColor()</code> compiles with <code>/MK &lt;&lt; /BG [0.933 0.933 0.933] &gt;&gt;</code> and nothing else</li>
+<li><code>getBorderWidth()</code> starts at <code>0</code>, and <code>getBorderColor()</code> and <code>getBackgroundColor()</code> start at <code>null</code></li>
+<li>a checkbox or radio draws its border and background into its own appearance streams, so the box
+looks the same whether it is currently checked or clear</li>
+</ul>
 <h2 id="text-fields">Text Fields<a class="anchor" href="#text-fields" aria-label="Link to this section">#</a></h2>
 
 <p><code>Field\Text</code> compiles to <code>/FT /Tx</code>. Give one a width and a height and call nothing else, and it
@@ -466,8 +500,8 @@ suits a part number or a reference code; the second caps entry at what the recta
 <p>The three together emit <code>/Ff 29360128</code>.</p>
 <h2 id="choice-fields">Choice Fields<a class="anchor" href="#choice-fields" aria-label="Link to this section">#</a></h2>
 
-<p><code>Field\Choice</code> compiles to <code>/FT /Ch</code> and covers both dropdowns and list boxes. <code>addOption()</code> takes one
-string and appends it to the field's option list, which compiles to <code>/Opt</code>:</p>
+<p><code>Field\Choice</code> compiles to <code>/FT /Ch</code> and covers both dropdowns and list boxes. <code>addOption()</code> appends
+to the field's option list, which compiles to <code>/Opt</code>:</p>
 <div class="code-window" x-data="copyCode">
 <div class="code-window-bar"><span class="code-lang">PHP</span><button type="button" class="code-copy" @click="copy()" :aria-label="copied ? 'Copied' : 'Copy code'" aria-label="Copy code"><svg x-show="!copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11.5" height="11.5" rx="2.4"></rect><path d="M15 5.6A2.6 2.6 0 0 0 12.4 3H5.6A2.6 2.6 0 0 0 3 5.6v6.8A2.6 2.6 0 0 0 5.6 15"></path></svg><svg x-show="copied" x-cloak class="code-copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9 17l10.5-10.5"></path></svg></button></div>
 <pre><code><span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Document\Font</span>;
@@ -489,6 +523,24 @@ string and appends it to the field's option list, which compiles to <code>/Opt</
 <li>a <code>Field\Choice</code> with a width and a height and nothing else compiles to <code>/FT /Ch</code> with a <code>/Rect</code>,
 no <code>/Opt</code> and no <code>/Ff</code> — add options to give the field its list</li>
 </ul>
+<p>Give <code>addOption()</code> a second argument to separate what a reader submits from what it shows:</p>
+<div class="code-window" x-data="copyCode">
+<div class="code-window-bar"><span class="code-lang">PHP</span><button type="button" class="code-copy" @click="copy()" :aria-label="copied ? 'Copied' : 'Copy code'" aria-label="Copy code"><svg x-show="!copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11.5" height="11.5" rx="2.4"></rect><path d="M15 5.6A2.6 2.6 0 0 0 12.4 3H5.6A2.6 2.6 0 0 0 3 5.6v6.8A2.6 2.6 0 0 0 5.6 15"></path></svg><svg x-show="copied" x-cloak class="code-copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9 17l10.5-10.5"></path></svg></button></div>
+<pre><code><span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Document\Font</span>;
+<span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Document\Page\Field\Choice</span>;
+
+<span class="text-var">$plan</span> = <span class="text-kw">new</span> <span class="text-type">Choice</span>(<span class="text-str">&#039;plan&#039;</span>, <span class="text-type">font</span>: <span class="text-type">Font</span>::<span class="text-num">HELVETICA</span>, <span class="text-type">size</span>: <span class="text-num">12</span>);
+<span class="text-var">$plan</span>-&gt;<span class="text-fn">setWidth</span>(<span class="text-num">240</span>);
+<span class="text-var">$plan</span>-&gt;<span class="text-fn">setHeight</span>(<span class="text-num">24</span>);
+<span class="text-var">$plan</span>-&gt;<span class="text-fn">addOption</span>(<span class="text-str">&#039;mo&#039;</span>, <span class="text-str">&#039;Monthly&#039;</span>);
+<span class="text-var">$plan</span>-&gt;<span class="text-fn">addOption</span>(<span class="text-str">&#039;yr&#039;</span>, <span class="text-str">&#039;Annual&#039;</span>);
+<span class="text-var">$plan</span>-&gt;<span class="text-fn">setValue</span>(<span class="text-str">&#039;yr&#039;</span>);
+</code></pre>
+</div>
+
+<p>That emits <code>/Opt [ [(mo) (Monthly)] [(yr) (Annual)] ]</code> — each pair the export value followed by its
+display label — and <code>/V (yr)</code>, preselecting Annual. An option added with one argument, or with a label
+matching its value, compiles as the plain string form above.</p>
 <h3 id="dropdowns">Dropdowns<a class="anchor" href="#dropdowns" aria-label="Link to this section">#</a></h3>
 
 <p><code>setCombo()</code> emits <code>/Ff 131072</code>, flag bit 18, which turns the list into a dropdown that shows one row
@@ -574,10 +626,14 @@ back from a getter</li>
 </code></pre>
 </div>
 
-<p>With no flag setter called, that is a checkbox: <code>/FT /Btn</code>, a 16 by 16 rectangle, <code>/Opt [ (Yes) ]</code>
-and no <code>/Ff</code>. <code>hasOptions()</code> reports whether any options have been added.</p>
-<p>A button's on and off states are names rather than strings, so give <code>setValue()</code> and
-<code>setDefaultValue()</code> a leading slash to have the box start out checked and reset to clear:</p>
+<p>With no flag setter called, that is a checkbox: <code>/FT /Btn</code>, a 16 by 16 rectangle and <code>/Opt [ (Yes) ]</code>,
+with no <code>/Ff</code>. It compiles clear — <code>/V /Off</code> and <code>/AS /Off</code> — with an <code>/AP</code> pair holding a <code>/Yes</code> state
+ready for the reader. <code>hasOptions()</code> reports whether any options have been added.</p>
+<h3 id="checked-state">Checked State<a class="anchor" href="#checked-state" aria-label="Link to this section">#</a></h3>
+
+<p><code>setValue()</code> names the state a reader reports for the widget when it <em>is</em> checked — its export value —
+and <code>setChecked()</code> says whether it starts out checked. The two are independent, and each is read back
+by its own getter:</p>
 <div class="code-window" x-data="copyCode">
 <div class="code-window-bar"><span class="code-lang">PHP</span><button type="button" class="code-copy" @click="copy()" :aria-label="copied ? 'Copied' : 'Copy code'" aria-label="Copy code"><svg x-show="!copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11.5" height="11.5" rx="2.4"></rect><path d="M15 5.6A2.6 2.6 0 0 0 12.4 3H5.6A2.6 2.6 0 0 0 3 5.6v6.8A2.6 2.6 0 0 0 5.6 15"></path></svg><svg x-show="copied" x-cloak class="code-copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9 17l10.5-10.5"></path></svg></button></div>
 <pre><code><span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Document\Font</span>;
@@ -586,15 +642,22 @@ and no <code>/Ff</code>. <code>hasOptions()</code> reports whether any options h
 <span class="text-var">$agree</span> = <span class="text-kw">new</span> <span class="text-type">Button</span>(<span class="text-str">&#039;agree&#039;</span>, <span class="text-type">font</span>: <span class="text-type">Font</span>::<span class="text-num">HELVETICA</span>, <span class="text-type">size</span>: <span class="text-num">12</span>);
 <span class="text-var">$agree</span>-&gt;<span class="text-fn">setWidth</span>(<span class="text-num">16</span>);
 <span class="text-var">$agree</span>-&gt;<span class="text-fn">setHeight</span>(<span class="text-num">16</span>);
-<span class="text-var">$agree</span>-&gt;<span class="text-fn">addOption</span>(<span class="text-str">&#039;Yes&#039;</span>);
-<span class="text-var">$agree</span>-&gt;<span class="text-fn">setValue</span>(<span class="text-str">&#039;/Yes&#039;</span>);
-<span class="text-var">$agree</span>-&gt;<span class="text-fn">setDefaultValue</span>(<span class="text-str">&#039;/Off&#039;</span>);
+<span class="text-var">$agree</span>-&gt;<span class="text-fn">setValue</span>(<span class="text-str">&#039;Yes&#039;</span>);    <span class="text-comment">// the export value, reported once the box is checked</span>
+<span class="text-var">$agree</span>-&gt;<span class="text-fn">setChecked</span>();       <span class="text-comment">// and check it</span>
+
+<span class="text-var">$agree</span>-&gt;<span class="text-fn">isChecked</span>();        <span class="text-comment">// true</span>
+<span class="text-var">$agree</span>-&gt;<span class="text-fn">getValue</span>();         <span class="text-comment">// &#039;Yes&#039;</span>
 </code></pre>
 </div>
 
-<p>That emits <code>/V /Yes</code> and <code>/DV /Off</code>. A <code>Field\Choice</code> takes the same two setters, but writes the
-value to the dictionary exactly as given rather than quoting it — <code>setValue('(Canada)')</code> emits
-<code>/V (Canada)</code>, preselecting that row of the list.</p>
+<p>That compiles to <code>/V /Yes</code> and <code>/AS /Yes</code> alongside <code>/AP &lt;&lt; /N &lt;&lt; /Yes 6 0 R /Off 7 0 R &gt;&gt; &gt;&gt;</code>, the
+pair of appearance streams the widget draws itself from — a filled square for a checkbox, a filled
+circle for a radio. Leave <code>setChecked()</code> off and the same field compiles with <code>/V /Off</code> and <code>/AS /Off</code>,
+its <code>/Yes</code> on-state ready for the reader to switch to.</p>
+<p>Give the export value as a plain word such as <code>Yes</code> or <code>email</code>: it is written as a PDF name, and
+anything outside letters, digits and <code>_</code> becomes <code>_</code>.</p>
+<p>A <code>Field\Choice</code> takes <code>setValue()</code> too, and writes it as a text string rather than a name —
+<code>setValue('Canada')</code> emits <code>/V (Canada)</code>, preselecting that row of the list.</p>
 <h3 id="radio-groups">Radio Groups<a class="anchor" href="#radio-groups" aria-label="Link to this section">#</a></h3>
 
 <p>Three flags apply to a <code>Field\Button</code> used as a radio option:</p>
@@ -605,6 +668,8 @@ second time</li>
 <li><code>setRadiosInUnison()</code> emits <code>/Ff 33554432</code>, flag bit 26 — turns every box sharing an export value on
 together</li>
 </ul>
+<p>Build the group from one <code>Field\Button</code> per option, each marked <code>setRadio()</code>, all sharing a field
+name and a form, each with its own export value and its own coordinates:</p>
 <div class="code-window" x-data="copyCode">
 <div class="code-window-bar"><span class="code-lang">PHP</span><button type="button" class="code-copy" @click="copy()" :aria-label="copied ? 'Copied' : 'Copy code'" aria-label="Copy code"><svg x-show="!copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11.5" height="11.5" rx="2.4"></rect><path d="M15 5.6A2.6 2.6 0 0 0 12.4 3H5.6A2.6 2.6 0 0 0 3 5.6v6.8A2.6 2.6 0 0 0 5.6 15"></path></svg><svg x-show="copied" x-cloak class="code-copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9 17l10.5-10.5"></path></svg></button></div>
 <pre><code><span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Document\Font</span>;
@@ -613,29 +678,32 @@ together</li>
 <span class="text-var">$email</span> = <span class="text-kw">new</span> <span class="text-type">Button</span>(<span class="text-str">&#039;contact_method&#039;</span>, <span class="text-type">font</span>: <span class="text-type">Font</span>::<span class="text-num">HELVETICA</span>, <span class="text-type">size</span>: <span class="text-num">12</span>);
 <span class="text-var">$email</span>-&gt;<span class="text-fn">setWidth</span>(<span class="text-num">16</span>);
 <span class="text-var">$email</span>-&gt;<span class="text-fn">setHeight</span>(<span class="text-num">16</span>);
-<span class="text-var">$email</span>-&gt;<span class="text-fn">addOption</span>(<span class="text-str">&#039;Email&#039;</span>);
 <span class="text-var">$email</span>-&gt;<span class="text-fn">setRadio</span>();
-<span class="text-var">$email</span>-&gt;<span class="text-fn">setNoToggleToOff</span>();
+<span class="text-var">$email</span>-&gt;<span class="text-fn">setValue</span>(<span class="text-str">&#039;email&#039;</span>);
+<span class="text-var">$email</span>-&gt;<span class="text-fn">setChecked</span>();
 
 <span class="text-var">$phone</span> = <span class="text-kw">new</span> <span class="text-type">Button</span>(<span class="text-str">&#039;contact_method&#039;</span>, <span class="text-type">font</span>: <span class="text-type">Font</span>::<span class="text-num">HELVETICA</span>, <span class="text-type">size</span>: <span class="text-num">12</span>);
 <span class="text-var">$phone</span>-&gt;<span class="text-fn">setWidth</span>(<span class="text-num">16</span>);
 <span class="text-var">$phone</span>-&gt;<span class="text-fn">setHeight</span>(<span class="text-num">16</span>);
-<span class="text-var">$phone</span>-&gt;<span class="text-fn">addOption</span>(<span class="text-str">&#039;Phone&#039;</span>);
 <span class="text-var">$phone</span>-&gt;<span class="text-fn">setRadio</span>();
-<span class="text-var">$phone</span>-&gt;<span class="text-fn">setNoToggleToOff</span>();
+<span class="text-var">$phone</span>-&gt;<span class="text-fn">setValue</span>(<span class="text-str">&#039;phone&#039;</span>);
 </code></pre>
 </div>
 
-<p>Building a radio group:</p>
+<p>Two or more such widgets compile to one grouped field — a shared, non-visual parent plus one child
+widget each — so choosing one option clears the rest:</p>
 <ul>
-<li>each pair above emits <code>/Ff 49152</code></li>
-<li>one <code>Field\Button</code> compiles to one rectangle, sized by <code>setWidth()</code>/<code>setHeight()</code> and placed by
-<code>addField()</code> — build the group from one <code>Field\Button</code> per box, sharing a field name and each with
-its own coordinates; added at 72, 700 and 72, 670, the two above compile to <code>/Rect [72 700 88 716]</code>
-and <code>/Rect [72 670 88 686]</code>, both indexed into the form</li>
-<li>give each box its own <code>addOption()</code> label and let the shared <code>/T</code> name tie them together, then call
-<code>setValue()</code> with the option that starts out chosen: <code>$email-&gt;setValue('/Email')</code> emits <code>/V /Email</code>
-alongside that box's <code>/Ff 32768</code></li>
+<li>the parent carries the group's identity: <code>/FT /Btn /T(contact_method) /Ff 32768</code>, plus
+<code>/V /email</code> naming the option that starts out chosen</li>
+<li>each child carries <code>/Parent</code>, its own <code>/Rect</code> and its own <code>/AP</code> on/off pair, and no <code>/T</code> or <code>/Ff</code> of
+its own — added at 72, 600 and 72, 570, the two above compile to <code>/Rect [72 600 88 616]</code> and
+<code>/Rect [72 570 88 586]</code></li>
+<li>the form counts the group as <strong>one</strong> field: <code>getNumberOfFields()</code> reports the parent, and
+<code>getFieldIndices()</code> carries the parent's object number, not the children's</li>
+<li>give every option its own <code>setValue()</code>, including the ones that start out clear, so each has a
+distinct export name; call <code>setChecked()</code> on the single option that starts out chosen</li>
+<li>a lone <code>setRadio()</code> field with no same-named sibling stays a top-level field of its own, <code>/T</code> and
+<code>/Ff 32768</code> included</li>
 <li><code>isRadio()</code> reads bit 16 back</li>
 </ul>
 <h3 id="push-buttons">Push Buttons<a class="anchor" href="#push-buttons" aria-label="Link to this section">#</a></h3>
@@ -655,12 +723,30 @@ value of its own:</p>
 </code></pre>
 </div>
 
-<p><code>isPushButton()</code> reads bit 17 back. Give a push button a <code>setFont()</code> and register that font on the
-document to get a <code>/DA</code> string the reader draws its caption with.</p>
+<p><code>isPushButton()</code> reads bit 17 back. <code>setCaption()</code> gives the button its label, drawn into an
+appearance stream of its own using the field's registered font:</p>
+<div class="code-window" x-data="copyCode">
+<div class="code-window-bar"><span class="code-lang">PHP</span><button type="button" class="code-copy" @click="copy()" :aria-label="copied ? 'Copied' : 'Copy code'" aria-label="Copy code"><svg x-show="!copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11.5" height="11.5" rx="2.4"></rect><path d="M15 5.6A2.6 2.6 0 0 0 12.4 3H5.6A2.6 2.6 0 0 0 3 5.6v6.8A2.6 2.6 0 0 0 5.6 15"></path></svg><svg x-show="copied" x-cloak class="code-copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9 17l10.5-10.5"></path></svg></button></div>
+<pre><code><span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Document\Font</span>;
+<span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Document\Page\Field\Button</span>;
+
+<span class="text-var">$submit</span> = <span class="text-kw">new</span> <span class="text-type">Button</span>(<span class="text-str">&#039;submit&#039;</span>, <span class="text-type">font</span>: <span class="text-type">Font</span>::<span class="text-num">HELVETICA</span>, <span class="text-type">size</span>: <span class="text-num">12</span>);
+<span class="text-var">$submit</span>-&gt;<span class="text-fn">setWidth</span>(<span class="text-num">80</span>);
+<span class="text-var">$submit</span>-&gt;<span class="text-fn">setHeight</span>(<span class="text-num">24</span>);
+<span class="text-var">$submit</span>-&gt;<span class="text-fn">setPushButton</span>();
+<span class="text-var">$submit</span>-&gt;<span class="text-fn">setCaption</span>(<span class="text-str">&#039;Send&#039;</span>);
+</code></pre>
+</div>
+
+<p>That compiles to <code>/MK &lt;&lt; /CA (Send) &gt;&gt;</code> and <code>/AP &lt;&lt; /N 6 0 R &gt;&gt;</code>, the stream that centers the caption
+in the widget using the font's own metrics. <code>getCaption()</code> reads it back, and starts out <code>null</code>. Give
+the button a <code>setFont()</code> and register that font on the document, so the caption has a resource to draw
+with; the button holds no action of its own.</p>
 <h2 id="see-also">See Also<a class="anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
 
 <ul>
 <li><a href="/build/text">Adding Text</a> — drawing the labels that sit beside each field</li>
 <li><a href="/build/fonts">Fonts</a> — registering the fonts a field's <code>/DA</code> string references</li>
+<li><a href="/build/html">HTML to PDF</a> — building the same fields from <code>&lt;form&gt;</code> markup instead of by hand</li>
 <li><a href="/import/modifying">Modifying Imported Pages</a> — adding fields to a page that came from an existing PDF</li>
 </ul>

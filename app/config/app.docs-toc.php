@@ -757,89 +757,101 @@ return array (
     ),
     3 => 
     array (
+      'level' => 3,
+      'id' => 'borders-and-backgrounds',
+      'text' => 'Borders and Backgrounds',
+    ),
+    4 => 
+    array (
       'level' => 2,
       'id' => 'text-fields',
       'text' => 'Text Fields',
     ),
-    4 => 
+    5 => 
     array (
       'level' => 3,
       'id' => 'multiline',
       'text' => 'Multiline',
     ),
-    5 => 
+    6 => 
     array (
       'level' => 3,
       'id' => 'password',
       'text' => 'Password',
     ),
-    6 => 
+    7 => 
     array (
       'level' => 3,
       'id' => 'comb-fields',
       'text' => 'Comb Fields',
     ),
-    7 => 
+    8 => 
     array (
       'level' => 3,
       'id' => 'file-select',
       'text' => 'File Select',
     ),
-    8 => 
+    9 => 
     array (
       'level' => 3,
       'id' => 'rich-text',
       'text' => 'Rich Text',
     ),
-    9 => 
+    10 => 
     array (
       'level' => 3,
       'id' => 'spell-check-and-scrolling',
       'text' => 'Spell Check and Scrolling',
     ),
-    10 => 
+    11 => 
     array (
       'level' => 2,
       'id' => 'choice-fields',
       'text' => 'Choice Fields',
     ),
-    11 => 
+    12 => 
     array (
       'level' => 3,
       'id' => 'dropdowns',
       'text' => 'Dropdowns',
     ),
-    12 => 
+    13 => 
     array (
       'level' => 3,
       'id' => 'list-boxes',
       'text' => 'List Boxes',
     ),
-    13 => 
+    14 => 
     array (
       'level' => 3,
       'id' => 'commit-on-change',
       'text' => 'Commit on Change',
     ),
-    14 => 
+    15 => 
     array (
       'level' => 2,
       'id' => 'buttons',
       'text' => 'Buttons',
     ),
-    15 => 
+    16 => 
+    array (
+      'level' => 3,
+      'id' => 'checked-state',
+      'text' => 'Checked State',
+    ),
+    17 => 
     array (
       'level' => 3,
       'id' => 'radio-groups',
       'text' => 'Radio Groups',
     ),
-    16 => 
+    18 => 
     array (
       'level' => 3,
       'id' => 'push-buttons',
       'text' => 'Push Buttons',
     ),
-    17 => 
+    19 => 
     array (
       'level' => 2,
       'id' => 'see-also',
@@ -927,6 +939,42 @@ return array (
       'text' => 'Tables',
     ),
     13 => 
+    array (
+      'level' => 2,
+      'id' => 'form-markup',
+      'text' => 'Form Markup',
+    ),
+    14 => 
+    array (
+      'level' => 3,
+      'id' => 'what-each-control-becomes',
+      'text' => 'What Each Control Becomes',
+    ),
+    15 => 
+    array (
+      'level' => 3,
+      'id' => 'sizing-a-control',
+      'text' => 'Sizing a Control',
+    ),
+    16 => 
+    array (
+      'level' => 3,
+      'id' => 'styling-a-control',
+      'text' => 'Styling a Control',
+    ),
+    17 => 
+    array (
+      'level' => 3,
+      'id' => 'radio-groups',
+      'text' => 'Radio Groups',
+    ),
+    18 => 
+    array (
+      'level' => 3,
+      'id' => 'controls-outside-a-form',
+      'text' => 'Controls Outside a Form',
+    ),
+    19 => 
     array (
       'level' => 2,
       'id' => 'see-also',

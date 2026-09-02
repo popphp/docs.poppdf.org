@@ -5,8 +5,8 @@
  */
 ?>
 <p><code>Html\Parser</code> reads HTML and CSS and writes directly into a <code>Document</code> — headings, paragraphs,
-lists, links, images and tables become pages, text streams, images and paths, with no headless
-browser or external rendering engine anywhere in the path.</p>
+lists, links, images, tables and form controls become pages, text streams, images, paths and
+interactive fields, with no headless browser or external rendering engine anywhere in the path.</p>
 <h2 id="converting-a-string-of-html">Converting a String of HTML<a class="anchor" href="#converting-a-string-of-html" aria-label="Link to this section">#</a></h2>
 
 <p><code>Pdf::importFromHtml()</code> is the fastest way in: hand it a string, get a ready-to-write <code>Document</code>
@@ -525,6 +525,221 @@ cells and draw the box</li>
 <li>a compound selector joining the two (<code>th.hdr { ... }</code>) matches nothing — write them as two separate
 rules instead</li>
 </ul>
+<h2 id="form-markup">Form Markup<a class="anchor" href="#form-markup" aria-label="Link to this section">#</a></h2>
+
+<p><code>&lt;form&gt;</code> markup becomes a real, fillable PDF form. <code>Form\Layout</code> converts each control in the subtree
+into a <code>Document\Page\Field\*</code> object and the enclosing <code>&lt;form&gt;</code> into a <code>Document\Form</code>, one control per
+line, the same way <code>Table\Layout</code> lays out rows:</p>
+<div class="code-window" x-data="copyCode">
+<div class="code-window-bar"><span class="code-lang">PHP</span><button type="button" class="code-copy" @click="copy()" :aria-label="copied ? 'Copied' : 'Copy code'" aria-label="Copy code"><svg x-show="!copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11.5" height="11.5" rx="2.4"></rect><path d="M15 5.6A2.6 2.6 0 0 0 12.4 3H5.6A2.6 2.6 0 0 0 3 5.6v6.8A2.6 2.6 0 0 0 5.6 15"></path></svg><svg x-show="copied" x-cloak class="code-copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9 17l10.5-10.5"></path></svg></button></div>
+<pre><code><span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Document</span>;
+<span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Pdf</span>;
+
+<span class="text-var">$html</span> = <span class="text-str">&lt;&lt;&lt;HTML
+</span><span class="text-str">&lt;form id=&quot;signup&quot;&gt;
+&lt;p&gt;Full name&lt;/p&gt;
+&lt;input type=&quot;text&quot; name=&quot;full_name&quot; value=&quot;Alex Doe&quot; /&gt;
+&lt;p&gt;Country&lt;/p&gt;
+&lt;select name=&quot;country&quot;&gt;
+&lt;option value=&quot;ca&quot;&gt;Canada&lt;/option&gt;
+&lt;option value=&quot;us&quot; selected&gt;United States&lt;/option&gt;
+&lt;/select&gt;
+&lt;p&gt;Agree to the terms&lt;/p&gt;
+&lt;input type=&quot;checkbox&quot; name=&quot;agree&quot; value=&quot;yes&quot; checked /&gt;
+&lt;button&gt;Send&lt;/button&gt;
+&lt;/form&gt;
+</span><span class="text-str">HTML</span>;
+
+<span class="text-var">$document</span> = <span class="text-type">Pdf</span>::<span class="text-fn">importFromHtml</span>(<span class="text-var">$html</span>, <span class="text-type">document</span>: <span class="text-kw">new</span> <span class="text-type">Document</span>());
+
+<span class="text-type">Pdf</span>::<span class="text-fn">writeToFile</span>(<span class="text-var">$document</span>, <span class="text-type">filename</span>: <span class="text-kw">__DIR__</span> . <span class="text-str">&#039;/signup.pdf&#039;</span>);
+
+<span class="text-var">$document</span>-&gt;<span class="text-fn">getForm</span>(<span class="text-str">&#039;signup&#039;</span>)-&gt;<span class="text-fn">getNumberOfFields</span>(); <span class="text-comment">// 4</span>
+</code></pre>
+</div>
+
+<p>That conversion happens on its own — there is no flag to set and no parser method to call. The four
+controls compile to the same widget dictionaries <a href="/build/forms">Forms &amp; Fields</a> describes, with the
+text field carrying <code>/V (Alex Doe)</code>, the checkbox carrying <code>/AS /yes</code> from its <code>checked</code> attribute, and
+the <code>&lt;select&gt;</code> carrying <code>/Opt [ [(ca) (Canada)] [(us) (United States)] ]</code> — each option's <code>value</code> paired
+with the text it displays.</p>
+<p>Names come from the markup:</p>
+<ul>
+<li>the form takes the <code>&lt;form&gt;</code> element's <code>id</code>, falling back to its <code>name</code>, then to <code>form1</code>, <code>form2</code> and so
+on in document order</li>
+<li>a control takes its own <code>name</code> attribute, falling back to <code>field1</code>, <code>field2</code> and so on — the <code>&lt;button&gt;</code>
+above, having no <code>name</code>, compiles as <code>field4</code></li>
+<li>two <code>&lt;form&gt;</code> elements resolving to the same name share one <code>Document\Form</code>, their controls landing in
+the same field set</li>
+</ul>
+<p>Give a control its label in an element of its own — a <code>&lt;label&gt;</code>, a <code>&lt;p&gt;</code> or a <code>&lt;div&gt;</code> — and it renders
+on the line above the control. Text placed beside a control inside the same element is the control's
+sibling rather than its own block, and the widget is what that line renders.</p>
+<h3 id="what-each-control-becomes">What Each Control Becomes<a class="anchor" href="#what-each-control-becomes" aria-label="Link to this section">#</a></h3>
+
+<table>
+<thead>
+<tr>
+<th>Markup</th>
+<th>Field</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&lt;input type=&quot;text&quot;&gt;</code>, and any unrecognized <code>type</code></td>
+<td><code>Field\Text</code></td>
+<td><code>value</code> attribute becomes <code>/V</code></td>
+</tr>
+<tr>
+<td><code>&lt;input type=&quot;password&quot;&gt;</code></td>
+<td><code>Field\Text</code></td>
+<td><code>setPassword()</code> — <code>/Ff 8192</code></td>
+</tr>
+<tr>
+<td><code>&lt;input type=&quot;file&quot;&gt;</code></td>
+<td><code>Field\Text</code></td>
+<td><code>setFileSelect()</code> — <code>/Ff 1048576</code></td>
+</tr>
+<tr>
+<td><code>&lt;input type=&quot;hidden&quot;&gt;</code></td>
+<td><code>Field\Text</code></td>
+<td>zero height, keeps its value, takes no space in the flow</td>
+</tr>
+<tr>
+<td><code>&lt;textarea&gt;</code></td>
+<td><code>Field\Text</code></td>
+<td><code>setMultiline()</code> — <code>/Ff 4096</code>; its text content becomes <code>/V</code></td>
+</tr>
+<tr>
+<td><code>&lt;select&gt;</code></td>
+<td><code>Field\Choice</code></td>
+<td><code>setCombo()</code>, or <code>setMultiSelect()</code> with a <code>multiple</code> attribute</td>
+</tr>
+<tr>
+<td><code>&lt;input type=&quot;checkbox&quot;&gt;</code></td>
+<td><code>Field\Button</code></td>
+<td>independent of every other checkbox</td>
+</tr>
+<tr>
+<td><code>&lt;input type=&quot;radio&quot;&gt;</code></td>
+<td><code>Field\Button</code></td>
+<td>same-named radios in one form become one group</td>
+</tr>
+<tr>
+<td><code>&lt;button&gt;</code>, <code>&lt;input type=&quot;submit&quot;&gt;</code>, <code>&lt;input type=&quot;reset&quot;&gt;</code></td>
+<td><code>Field\Button</code></td>
+<td><code>setPushButton()</code> — <code>/Ff 65536</code></td>
+</tr>
+</tbody>
+</table>
+<p>An <code>&lt;option&gt;</code> gives its <code>value</code> as the export value and its text as the display label. Leave the <code>value</code>
+off and the text serves as both. A <code>selected</code> option becomes the field's <code>/V</code>, and a <code>checked</code> checkbox
+or radio becomes the one that starts out on.</p>
+<p>A push button renders its caption — the <code>&lt;button&gt;</code> element's own text, or an <code>&lt;input&gt;</code>'s <code>value</code>
+attribute, defaulting to <code>Submit</code> and <code>Reset</code> for those two types. The caption is drawn into the widget's
+appearance stream from the document's Arial resource, and the button holds no action of its own.</p>
+<h3 id="sizing-a-control">Sizing a Control<a class="anchor" href="#sizing-a-control" aria-label="Link to this section">#</a></h3>
+
+<p>A control's size comes from its own HTML attribute first, then CSS, then a default per control type:</p>
+<div class="code-window" x-data="copyCode">
+<div class="code-window-bar"><span class="code-lang">PHP</span><button type="button" class="code-copy" @click="copy()" :aria-label="copied ? 'Copied' : 'Copy code'" aria-label="Copy code"><svg x-show="!copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11.5" height="11.5" rx="2.4"></rect><path d="M15 5.6A2.6 2.6 0 0 0 12.4 3H5.6A2.6 2.6 0 0 0 3 5.6v6.8A2.6 2.6 0 0 0 5.6 15"></path></svg><svg x-show="copied" x-cloak class="code-copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9 17l10.5-10.5"></path></svg></button></div>
+<pre><code><span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Document</span>;
+<span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Pdf</span>;
+
+<span class="text-var">$html</span> = <span class="text-str">&lt;&lt;&lt;HTML
+</span><span class="text-str">&lt;style&gt;.wide { width: 50%; }&lt;/style&gt;
+&lt;form id=&quot;signup&quot;&gt;
+&lt;input type=&quot;text&quot; name=&quot;a&quot; /&gt;
+&lt;input type=&quot;text&quot; name=&quot;b&quot; size=&quot;10&quot; /&gt;
+&lt;input type=&quot;text&quot; name=&quot;c&quot; class=&quot;wide&quot; /&gt;
+&lt;textarea name=&quot;d&quot; rows=&quot;4&quot; cols=&quot;30&quot;&gt;&lt;/textarea&gt;
+&lt;/form&gt;
+</span><span class="text-str">HTML</span>;
+
+<span class="text-var">$document</span> = <span class="text-type">Pdf</span>::<span class="text-fn">importFromHtml</span>(<span class="text-var">$html</span>, <span class="text-type">document</span>: <span class="text-kw">new</span> <span class="text-type">Document</span>());
+</code></pre>
+</div>
+
+<p>On a letter page those four compile to <code>/Rect [60 692 260 712]</code>, <code>[60 668 130 688]</code>, <code>[60 644 366 664]</code>
+and <code>[60 576 270 640]</code>:</p>
+<ul>
+<li>an <code>&lt;input&gt;</code>'s <code>size</code> and a <code>&lt;textarea&gt;</code>'s <code>cols</code> count characters, at 7 points each — <code>size=&quot;10&quot;</code>
+is 70 points wide</li>
+<li>a <code>&lt;textarea&gt;</code>'s <code>rows</code> counts lines, at 16 points each — <code>rows=&quot;4&quot;</code> is 64 points tall</li>
+<li>a <code>width</code> or <code>height</code> attribute, and CSS <code>width</code>/<code>height</code>, both take a percentage as a share of the
+page — <code>width: 50%</code> on a 612-point page is 306 points, the same way a percentage on an <code>&lt;img&gt;</code> resolves</li>
+<li>the defaults are 200 by 20 for a text input, 300 by 60 for a <code>&lt;textarea&gt;</code>, 150 by 20 for a <code>&lt;select&gt;</code>,
+80 by 24 for a button and 14 by 14 for a checkbox or radio</li>
+</ul>
+<h3 id="styling-a-control">Styling a Control<a class="anchor" href="#styling-a-control" aria-label="Link to this section">#</a></h3>
+
+<p><code>border-width</code>, <code>border-color</code> and <code>background-color</code> carry onto the field the same way they carry onto
+a <code>&lt;div&gt;</code> or a table cell:</p>
+<div class="code-window" x-data="copyCode">
+<div class="code-window-bar"><span class="code-lang">PHP</span><button type="button" class="code-copy" @click="copy()" :aria-label="copied ? 'Copied' : 'Copy code'" aria-label="Copy code"><svg x-show="!copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11.5" height="11.5" rx="2.4"></rect><path d="M15 5.6A2.6 2.6 0 0 0 12.4 3H5.6A2.6 2.6 0 0 0 3 5.6v6.8A2.6 2.6 0 0 0 5.6 15"></path></svg><svg x-show="copied" x-cloak class="code-copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9 17l10.5-10.5"></path></svg></button></div>
+<pre><code><span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Document</span>;
+<span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Pdf</span>;
+
+<span class="text-var">$html</span> = <span class="text-str">&lt;&lt;&lt;HTML
+</span><span class="text-str">&lt;style&gt;input { border-width: 1px; border-color: #999999; background-color: #eeeeee; }&lt;/style&gt;
+&lt;form id=&quot;signup&quot;&gt;&lt;input type=&quot;text&quot; name=&quot;full_name&quot; /&gt;&lt;/form&gt;
+</span><span class="text-str">HTML</span>;
+
+<span class="text-var">$document</span> = <span class="text-type">Pdf</span>::<span class="text-fn">importFromHtml</span>(<span class="text-var">$html</span>, <span class="text-type">document</span>: <span class="text-kw">new</span> <span class="text-type">Document</span>());
+</code></pre>
+</div>
+
+<p>That field compiles with <code>/MK &lt;&lt; /BC [0.6 0.6 0.6] /BG [0.933 0.933 0.933] &gt;&gt;</code> and <code>/BS &lt;&lt; /W 1 &gt;&gt;</code>, the
+appearance-characteristics and border-style entries a reader draws the box from. A plain element selector
+(<code>input { ... }</code>) and a bare class selector (<code>.wide { ... }</code>) both reach the control; write the two as
+separate rules rather than joining them into <code>input.wide</code>, the same rule table cells follow.</p>
+<h3 id="radio-groups">Radio Groups<a class="anchor" href="#radio-groups" aria-label="Link to this section">#</a></h3>
+
+<p>Radios sharing a <code>name</code> inside one <code>&lt;form&gt;</code> compile to a single grouped field — one shared parent plus
+one child widget per option — so choosing one clears the others:</p>
+<div class="code-window" x-data="copyCode">
+<div class="code-window-bar"><span class="code-lang">PHP</span><button type="button" class="code-copy" @click="copy()" :aria-label="copied ? 'Copied' : 'Copy code'" aria-label="Copy code"><svg x-show="!copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11.5" height="11.5" rx="2.4"></rect><path d="M15 5.6A2.6 2.6 0 0 0 12.4 3H5.6A2.6 2.6 0 0 0 3 5.6v6.8A2.6 2.6 0 0 0 5.6 15"></path></svg><svg x-show="copied" x-cloak class="code-copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9 17l10.5-10.5"></path></svg></button></div>
+<pre><code><span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Document</span>;
+<span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Pdf</span>;
+
+<span class="text-var">$html</span> = <span class="text-str">&lt;&lt;&lt;HTML
+</span><span class="text-str">&lt;form id=&quot;survey&quot;&gt;
+&lt;p&gt;Preferred contact&lt;/p&gt;
+&lt;label&gt;Email&lt;/label&gt;&lt;input type=&quot;radio&quot; name=&quot;contact&quot; value=&quot;email&quot; checked /&gt;
+&lt;label&gt;Phone&lt;/label&gt;&lt;input type=&quot;radio&quot; name=&quot;contact&quot; value=&quot;phone&quot; /&gt;
+&lt;label&gt;Mail&lt;/label&gt;&lt;input type=&quot;radio&quot; name=&quot;contact&quot; value=&quot;mail&quot; /&gt;
+&lt;/form&gt;
+</span><span class="text-str">HTML</span>;
+
+<span class="text-var">$document</span> = <span class="text-type">Pdf</span>::<span class="text-fn">importFromHtml</span>(<span class="text-var">$html</span>, <span class="text-type">document</span>: <span class="text-kw">new</span> <span class="text-type">Document</span>());
+
+<span class="text-var">$document</span>-&gt;<span class="text-fn">getForm</span>(<span class="text-str">&#039;survey&#039;</span>)-&gt;<span class="text-fn">getNumberOfFields</span>(); <span class="text-comment">// 1</span>
+</code></pre>
+</div>
+
+<p>Three options, one field: the parent carries <code>/FT /Btn /T(contact) /Ff 32768 /V /email</code>, and each child
+carries a <code>/Parent</code> back-reference and its own on and off appearance streams. The group also travels as a
+unit — a group that would otherwise straddle a page break moves whole to the next page, as long as it
+fits on one, so its options never compile as two separately-named halves.</p>
+<h3 id="controls-outside-a-form">Controls Outside a Form<a class="anchor" href="#controls-outside-a-form" aria-label="Link to this section">#</a></h3>
+
+<p>A control with no <code>&lt;form&gt;</code> ancestor still compiles, into an implicit form named <code>__default__</code>:</p>
+<div class="code-window" x-data="copyCode">
+<div class="code-window-bar"><span class="code-lang">PHP</span><button type="button" class="code-copy" @click="copy()" :aria-label="copied ? 'Copied' : 'Copy code'" aria-label="Copy code"><svg x-show="!copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11.5" height="11.5" rx="2.4"></rect><path d="M15 5.6A2.6 2.6 0 0 0 12.4 3H5.6A2.6 2.6 0 0 0 3 5.6v6.8A2.6 2.6 0 0 0 5.6 15"></path></svg><svg x-show="copied" x-cloak class="code-copied" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5 9 17l10.5-10.5"></path></svg></button></div>
+<pre><code><span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Document</span>;
+<span class="text-kw">use</span> <span class="text-type">Pop\Pdf\Pdf</span>;
+
+<span class="text-var">$document</span> = <span class="text-type">Pdf</span>::<span class="text-fn">importFromHtml</span>(<span class="text-str">&#039;&lt;p&gt;Name&lt;/p&gt;&lt;input type=&quot;text&quot; name=&quot;who&quot; /&gt;&#039;</span>, <span class="text-type">document</span>: <span class="text-kw">new</span> <span class="text-type">Document</span>());
+
+<span class="text-type">Pdf</span>::<span class="text-fn">writeToFile</span>(<span class="text-var">$document</span>, <span class="text-type">filename</span>: <span class="text-kw">__DIR__</span> . <span class="text-str">&#039;/who.pdf&#039;</span>);
+
+<span class="text-var">$document</span>-&gt;<span class="text-fn">getForm</span>(<span class="text-str">&#039;__default__&#039;</span>)-&gt;<span class="text-fn">getNumberOfFields</span>(); <span class="text-comment">// 1</span>
+</code></pre>
+</div>
+
+<p>Every loose control on the document shares that one form, so a page of stray inputs still submits as one
+set. Field indices fill in when the document compiles, so read <code>getNumberOfFields()</code> after the write.</p>
 <h2 id="see-also">See Also<a class="anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
 
 <ul>
@@ -532,5 +747,7 @@ rules instead</li>
 outside of HTML</li>
 <li><a href="/build/fonts">Fonts</a> — the standard and embedded fonts an HTML document's font-family resolves
 against</li>
+<li><a href="/build/forms">Forms &amp; Fields</a> — the field objects form markup compiles into, and the same fields built
+by hand</li>
 <li><a href="/build/documents">Creating Documents</a> — the <code>Document</code> object every conversion here returns</li>
 </ul>
